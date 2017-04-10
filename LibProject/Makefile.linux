@@ -1,0 +1,11 @@
+INCLUDES+=
+INCLUDES+=-I/usr/local/include/boost-1_49_0 -I../ -Ishared/inc  -I/usr/include/libusb-1.0
+CXXFLAGS_BASE=-c -DNDEBUG -Wall $(INCLUDES)
+CXXFLAGS_RELEASE= -O3 -DRELEASE
+CXXFLAGS_DEBUG  = -O0 -g -DDEBUG
+LDFLAGS_BASE=
+IGNORE_FILES =Sensor.cpp WinUSB.cpp
+EXECUTABLE=
+LIBRARY=libProject.a
+PROJFILE=LibProject.vcxproj
+

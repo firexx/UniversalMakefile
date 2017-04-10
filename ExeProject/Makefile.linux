@@ -1,0 +1,15 @@
+PROJFILE=ExeProject.vcxproj
+INCLUDES+=-I/usr/include/qt4 -I/usr/include/qt4/QtGui -I/usr/include/qt4/QtCore -I../LibProject
+INCLUDES+=-I/usr/local/include/boost-1_49_0 -I../ -Ishared/inc  -I/usr/include/libusb-1.0
+INCLUDES+=-I/usr/include/qwt -I/usr/include/crypto++
+CXXFLAGS_BASE=-c -Wall -DNDEBUG -DWITH_PROFILER -pthread $(INCLUDES) 
+CXXFLAGS_RELEASE= -O3 -DRELEASE
+CXXFLAGS_DEBUG  = -O0 -g -DDEBUG
+LIBRARY_PATH=-L../LibProject
+LDFLAGS_BASE=-lProject -L/user/local/lib64 -L/usr/lib/x86_64-linux-gnu/ -lQtCore -lQtGui -lpthread -ldl -lboost_thread-gcc46-mt -lusb -lqwt -lcryptopp -lcrypto
+LDFLAGS_DEBUG=
+LDFLAGS_RELEASE=
+IGNORE_FILES=
+EXECUTABLE=ExeProject
+LIBRARY=
+

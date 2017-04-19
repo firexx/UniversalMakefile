@@ -1,0 +1,235 @@
+# using from project subdirectory:
+#	make CONF=debug build
+#	make CONF=release build
+#	make clean
+#
+# Variables
+# PROJECT=projectname                            // projectname
+# SUBPROJECTS=../subproject1 ../subproject2      // sub projects they will be build before the project
+# INCLUDES=-I/path/to/headers                    // include header files paths specified in INCLUDES variable
+# 
+# CXXFLAGS_BASE=-c -Wall -DNDEBUG $(INCLUDES)    // CXXFLAGS for all configuration
+# CXXFLAGS_RELEASE= -O3 -DRELEASE				 // CXXFLAGS for release configuration
+# CXXFLAGS_DEBUG  = -O0 -g -DDEBUG				 // CXXFLAGS for debug configuration
+# 
+# LIBRARY_PATH=-L/path/to/libraryes              // paths for libraries
+# 
+# LDFLAGS_BASE=-llibraryname                     // link library liblibraryname.a
+# LDFLAGS_DEBUG=<debug flags>                    // flags for linker in debug mode
+# LDFLAGS_RELEASE=<release flags>                // flags for linker in release mode
+#
+# IGNORE_FILES=file1 file2                       // ignore file1 file2
+#                
+# EXECUTABLE=ExecutableName						 // specify this variable for creating the executable
+# LIBRARY=LibraryName.a							 // specify this variable for creating the static library
+# DYNAMIC=SharedLibraryName.so                   // specify this variable for creating the shared library
+
+############## DON'T EDIT UNDER ######################
+
+
+SOURCE_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.cpp))
+HEADER_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.h *.hpp))
+
+MOCKS=$(patsubst %.h,%_mock.h,$(patsubst %.hpp,%_mock.hpp,$(filter-out stdafx.h ui_%.h,$(HEADERS))))
+
+UIS=$(filter-out $(IGNORE_FILES),$(wildcard *.ui))
+HEADER_FILES+=$(patsubst %.ui,ui_%.h,$(UIS))
+
+MOC_HEADERS=$(shell grep "Q_OBJECT" -l $(HEADERS) 2>/dev/null)
+MOCS=$(patsubst %.h,moc_%.cpp,$(MOC_HEADERS))
+SOURCE_FILES+=$(MOCS)
+
+QRCS=$(filter-out $(IGNORE_FILES),$(wildcard *.qrc))
+QRC_SOURCES=$(patsubst %.qrc,qrc_%.cpp,$(QRCS))
+SOURCE_FILES+=$(QRC_SOURCES)
+
+BINS=$(filter-out $(IGNORE_FILES),$(wildcard *.hex *.xsvf))
+BIN_HEADERS=$(patsubst %.xsvf,%.h,$(patsubst %.hex,%.h,$(BINS)))
+BIN_SOURCES=$(patsubst %.xsvf,%.cpp,$(patsubst %.hex,%.cpp,$(BINS)))
+
+HEADER_FILES+=$(BIN_HEADERS)
+SOURCE_FILES+=$(BIN_SOURCES)
+
+SOURCES=$(sort $(SOURCE_FILES))
+HEADERS=$(sort $(HEADER_FILES))
+
+ifdef EXECUTABLE
+EXECUTABLE_FILE=$(TARGETDIR)/$(EXECUTABLE)
+endif
+ifdef LIBRARY
+LIBRARY_FILE=$(TARGETDIR)/$(LIBRARY)
+endif
+ifdef DYNAMIC
+DYNAMIC_FILE=$(TARGETDIR)/$(DYNAMIC)
+endif
+
+
+######## Configuration controlling #########
+
+CXXFLAGS=$(CXXFLAGS_BASE)
+LDFLAGS=$(LDFLAGS_BASE) 
+DEPDIR=deps
+DEPS:=$(patsubst %.cpp,$(DEPDIR)/%.d,$(SOURCE_FILES))
+
+ifeq ($(CONF),release)
+    CXXFLAGS+=$(CXXFLAGS_RELEASE)
+    LDFLAGS+= $(LDFLAGS_RELEASE)
+else 
+    CXXFLAGS+=$(CXXFLAGS_DEBUG)
+    LDFLAGS+= $(LDFLAGS_DEBUG)
+endif
+
+TARGETDIR=bin/$(CONF)
+OBJECTS+=$(addprefix $(TARGETDIR)/,$(subst .c,.o,$(subst .cpp,.o,$(SOURCES))))
+
+$(TARGETDIR):
+	@echo " =====> create target directory $(TARGETDIR)"
+	@mkdir -p $(TARGETDIR)
+
+.PHONY: build
+build: $(SUBPROJECTS) $(TARGETDIR) $(HEADERS) $(SOURCES) $(DYNAMIC_FILE) $(LIBRARY_FILE) $(EXECUTABLE_FILE) 
+	
+.PHONY: $(SUBPROJECTS)
+$(SUBPROJECTS):
+	@echo " =====> build project $@"
+	@$(MAKE) -C $@ -f Makefile.linux build
+
+
+SUBPROJECTSTOCELAN= $(addsuffix "-toclean",$(SUBPROJECTS))
+
+.PHONY:clean-all  $(SUBPROJECTSTOCELAN)
+clean-all:  $(SUBPROJECTSTOCELAN) clean
+
+$(SUBPROJECTSTOCELAN) :
+	@$(MAKE) -C $(subst "-toclean", , $@) -f Makefile.linux clean
+
+
+.PHONY: clean
+clean:
+	@echo " =====> clean generated files" 
+	@$(RM) -r $(TARGETDIR) $(DEPDIR) $(EXECUTABLE_FILE) $(LIBRARY_FILE) $(DYNAMIC_FILE) $(OBJECTS) $(MOCKS) $(MOCS) $(BIN_HEADERS) $(BIN_SOURCES) \
+		$(QRC_SOURCES) *.bak
+
+$(EXECUTABLE_FILE): $(OBJECTS)
+	@echo " =====> linking an executable $(EXECUTABLE)"
+	@$(CXX) -o $@ $^ $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
+
+$(LIBRARY_FILE): $(OBJECTS)
+	@echo " =====> linking a static library $(LIBRARY)"
+	@$(AR) rcs $@ $^
+
+$(DYNAMIC_FILE): $(OBJECTS)
+	@echo " =====> linking a shared(dynamic) library $(DYNAMIC)"
+	$(CXX) -shared -o $@ $^ $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS) 
+
+$(TARGETDIR)/%.o : %.cpp
+	@echo " =====> compile $< to $@"
+	@$(CXX) $(CXXFLAGS) $< -o $@
+
+######### BUILD ORDER ######################
+$(BIN_SOURCES): $(BIN_HEADERS) 
+$(UIS): $(BIN_SOURCES) $(BIN_HEADERS) 
+$(QRC_SOURCES): $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) 
+$(MOCS): $(QRC_SOURCES) $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) 
+$(DEPS): $(MOCS) $(QRC_SOURCES) $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) 
+$(OBJECTS): $(DEPS) $(MOCS) $(QRC_SOURCES) $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) $(SUBPROJECTS)
+$(DYNAMIC_FILE): $(OBJECTS) 
+$(EXECUTABLE_FILE): $(OBJECTS) 
+$(LIBRARY_FILE): $(OBJECTS) 
+
+$(DEPDIR)/%.d : %.cpp
+	@echo " =====> cleate dependency $< to $@"
+	@mkdir -p $(DEPDIR)
+	@$(CXX) $(CXXFLAGS) -M $< | sed -e 's%\($*\)\.o[ :]*%$(TARGETDIR)/\1.o $@ : %g' > $@
+	
+######### Debug ######################
+.PHONY: files
+files: 
+	@echo "PROJECT         = $(PROJECT)"
+	@echo "SUBPROJECTS     = $(SUBPROJECTS)"
+	@echo "SUBPROJ_CELAN   = $(SUBPROJECTSTOCELAN)"
+	@echo "CONF            = $(CONF)"
+	@echo "TARGETDIR       = $(TARGETDIR)"
+	@echo "CXXFLAGS        = $(CXXFLAGS)"
+	@echo "EXECUTABLE      = $(EXECUTABLE)"
+	@echo "LIBRARY         = $(LIBRARY)"
+	@echo "DYNAMIC         = $(DYNAMIC)"
+	@echo "EXECUTABLE_FILE = $(EXECUTABLE_FILE)"
+	@echo "LIBRARY_FILE    = $(LIBRARY_FILE)"
+	@echo "DYNAMIC_FILE    = $(DYNAMIC_FILE)"
+	@echo "FILTER          = $(IGNORE_FILES)"
+	@echo "SOURCES         = $(SOURCES)"
+	@echo "OBJECTS         = $(OBJECTS)"
+	@echo "HEADERS         = $(HEADERS)"
+	@echo "MOCKS           = $(MOCKS)"
+	@echo "UIS             = $(UIS)"
+	@echo "MOCS            = $(MOCS)"
+	@echo "BINS            = $(BINS)"
+	@echo "DEPS            = $(DEPS)"
+
+######### Google Mock ################
+.PHONY: mock
+mock: $(HEADERS) $(MOCKS)
+
+%_mock.h %_mock.hpp: %.h
+	gmock_gen $< > $@ 
+
+######### binary convertion ################
+
+define BIN_CONVERT_H= 
+	@echo "#ifndef __$(shell basename $@ .h | tr a-z A-Z )_H__" > $@      
+	@echo "#define __$(shell basename $@ .h | tr a-z A-Z )_H__" >> $@     
+	@echo >> $@                                                           
+	@echo "extern size_t $(shell basename $@ .h)_size;">> $@ 
+	@echo "extern unsigned char $(shell basename $@ .h)[];" >> $@             
+	@echo >> $@                                                           
+	@echo "#endif" >> $@                                                  
+	@echo  >> $@                                   
+endef
+
+define BIN_CONVERT_C=
+	@echo "#include \"StdAfx.h\""> $@      
+	@echo "#include \"$(shell basename $@ .cpp).h\"" >> $@
+	@echo >> $@                                                           
+	@echo "size_t $(shell basename $@ .cpp)_size=$(shell stat -L -c '%s' $< );">> $@ 
+	@echo "unsigned char $(shell basename $@ .cpp)[] = {" >> $@             
+	@xxd -i < $< >> $@                                                    
+	@echo "};" >> $@                                                      
+	@echo >> $@                                                           
+endef
+
+%.h: %.hex
+	@echo " =====> convert $< to $@"
+	@$(BIN_CONVERT_H)
+
+%.h: %.xsvf
+	@echo " =====> convert $< to $@"
+	@$(BIN_CONVERT_H)
+
+%.cpp : %.hex
+	@echo " =====> convert $< to $@"
+	@$(BIN_CONVERT_C)
+
+%.cpp : %.xsvf
+	@echo " =====> convert $< to $@"
+	@$(BIN_CONVERT_C)
+
+######### QT #########################
+
+ui_%.h: %.ui
+	@echo " =====> convert $< to $@"
+	@uic $< -o $@
+
+moc_%.cpp: %.h
+	@echo " =====> convert $< to $@"
+	@moc $< -o $@ 
+
+qrc_%.cpp: %.qrc
+	@echo " =====> convert $< to $@"
+	@rcc -name $(basename $< ) $< -o $@
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),clean-all)
+-include $(DEPS)
+endif
+endif

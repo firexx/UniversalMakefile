@@ -25,19 +25,53 @@
 # DYNAMIC=SharedLibraryName.so                   // specify this variable for creating the shared library
 
 ############## DON'T EDIT UNDER ######################
+######### Debug ######################
+
+.PHONY: files
+files: 
+	@echo "PROJECT         = $(PROJECT)"
+	@echo "SUBPROJECTS     = $(SUBPROJECTS)"
+	@echo "SUBPROJ_CELAN   = $(SUBPROJECTSTOCELAN)"
+	@echo "CONF            = $(CONF)"
+	@echo "TARGETDIR       = $(TARGETDIR)"
+	@echo "CXXFLAGS        = $(CXXFLAGS)"
+	@echo "EXECUTABLE      = $(EXECUTABLE)"
+	@echo "LIBRARY         = $(LIBRARY)"
+	@echo "DYNAMIC         = $(DYNAMIC)"
+	@echo "EXECUTABLE_FILE = $(EXECUTABLE_FILE)"
+	@echo "LIBRARY_FILE    = $(LIBRARY_FILE)"
+	@echo "DYNAMIC_FILE    = $(DYNAMIC_FILE)"
+	@echo "FILTER          = $(IGNORE_FILES)"
+	@echo "SOURCE_FILES    = $(SOURCE_FILES)"
+	@echo "HEADER_FILES    = $(HEADER_FILES)"
+	@echo "SOURCES         = $(SOURCES)"
+	@echo "OBJECTS         = $(OBJECTS)"
+	@echo "HEADERS         = $(HEADERS)"
+	@echo "MOCKS           = $(MOCKS)"
+	@echo "UIS             = $(UIS)"
+	@echo "MOC_HEADERS     = $(MOC_HEADERS)"
+	@echo "MOCS            = $(MOCS)"
+	@echo "BINS            = $(BINS)"
+	@echo "DEPS            = $(DEPS)"
 
 
 SOURCE_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.cpp))
 HEADER_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.h *.hpp))
+
+SOURCES=$(sort $(SOURCE_FILES))
+#HEADERS=$(sort $(HEADER_FILES))
 
 MOCKS=$(patsubst %.h,%_mock.h,$(patsubst %.hpp,%_mock.hpp,$(filter-out stdafx.h ui_%.h,$(HEADERS))))
 
 UIS=$(filter-out $(IGNORE_FILES),$(wildcard *.ui))
 HEADER_FILES+=$(patsubst %.ui,ui_%.h,$(UIS))
 
+ifdef HEADERS
 MOC_HEADERS=$(shell grep "Q_OBJECT" -l $(HEADERS) 2>/dev/null)
+endif
 MOCS=$(patsubst %.h,moc_%.cpp,$(MOC_HEADERS))
 SOURCE_FILES+=$(MOCS)
+
 
 QRCS=$(filter-out $(IGNORE_FILES),$(wildcard *.qrc))
 QRC_SOURCES=$(patsubst %.qrc,qrc_%.cpp,$(QRCS))
@@ -50,8 +84,6 @@ BIN_SOURCES=$(patsubst %.xsvf,%.cpp,$(patsubst %.hex,%.cpp,$(BINS)))
 HEADER_FILES+=$(BIN_HEADERS)
 SOURCE_FILES+=$(BIN_SOURCES)
 
-SOURCES=$(sort $(SOURCE_FILES))
-HEADERS=$(sort $(HEADER_FILES))
 
 ifdef EXECUTABLE
 EXECUTABLE_FILE=$(TARGETDIR)/$(EXECUTABLE)
@@ -82,18 +114,14 @@ endif
 TARGETDIR=bin/$(CONF)
 OBJECTS+=$(addprefix $(TARGETDIR)/,$(subst .c,.o,$(subst .cpp,.o,$(SOURCES))))
 
-$(TARGETDIR):
-	@echo " =====> create target directory $(TARGETDIR)"
-	@mkdir -p $(TARGETDIR)
-
 .PHONY: build
-build: $(SUBPROJECTS) $(TARGETDIR) $(HEADERS) $(SOURCES) $(DYNAMIC_FILE) $(LIBRARY_FILE) $(EXECUTABLE_FILE) 
-	
-.PHONY: $(SUBPROJECTS)
-$(SUBPROJECTS):
-	@echo " =====> build project $@"
-	@$(MAKE) -C $@ -f Makefile.linux build
+build: $(DYNAMIC_FILE) $(LIBRARY_FILE) $(EXECUTABLE_FILE) 
 
+SUBPROJECTS_TARGETDIRS=$(addsuffix /$(TARGETDIR),$(SUBPROJECTS))
+subprojects : $(SUBPROJECTS_TARGETDIRS)
+$(SUBPROJECTS_TARGETDIRS): $(SUBPROJECTS)
+	@echo " =====> build project $<"
+	@$(MAKE) -C $< -f Makefile.linux build 
 
 SUBPROJECTSTOCELAN= $(addsuffix "-toclean",$(SUBPROJECTS))
 
@@ -103,7 +131,7 @@ clean-all:  $(SUBPROJECTSTOCELAN) clean
 $(SUBPROJECTSTOCELAN) :
 	@$(MAKE) -C $(subst "-toclean", , $@) -f Makefile.linux clean
 
-
+ 
 .PHONY: clean
 clean:
 	@echo " =====> clean generated files" 
@@ -112,60 +140,39 @@ clean:
 
 $(EXECUTABLE_FILE): $(OBJECTS)
 	@echo " =====> linking an executable $(EXECUTABLE)"
-	@$(CXX) -o $@ $^ $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
+	$(CXX) -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
 
 $(LIBRARY_FILE): $(OBJECTS)
 	@echo " =====> linking a static library $(LIBRARY)"
-	@$(AR) rcs $@ $^
+	$(AR) rcs $@ $(OBJECTS)
 
 $(DYNAMIC_FILE): $(OBJECTS)
-	@echo " =====> linking a shared(dynamic) library $(DYNAMIC)"
-	$(CXX) -shared -o $@ $^ $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS) 
+	@echo " =====> linking a dynamic library $(DYNAMIC)"
+	$(CXX) -shared -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS) 
 
 $(TARGETDIR)/%.o : %.cpp
 	@echo " =====> compile $< to $@"
+	@mkdir -p $(TARGETDIR)
 	@$(CXX) $(CXXFLAGS) $< -o $@
-
-######### BUILD ORDER ######################
-$(BIN_SOURCES): $(BIN_HEADERS) 
-$(UIS): $(BIN_SOURCES) $(BIN_HEADERS) 
-$(QRC_SOURCES): $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) 
-$(MOCS): $(QRC_SOURCES) $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) 
-$(DEPS): $(MOCS) $(QRC_SOURCES) $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) 
-$(OBJECTS): $(DEPS) $(MOCS) $(QRC_SOURCES) $(UIS) $(BIN_SOURCES) $(BIN_HEADERS) $(SUBPROJECTS)
-$(DYNAMIC_FILE): $(OBJECTS) 
-$(EXECUTABLE_FILE): $(OBJECTS) 
-$(LIBRARY_FILE): $(OBJECTS) 
 
 $(DEPDIR)/%.d : %.cpp
 	@echo " =====> cleate dependency $< to $@"
 	@mkdir -p $(DEPDIR)
 	@$(CXX) $(CXXFLAGS) -M $< | sed -e 's%\($*\)\.o[ :]*%$(TARGETDIR)/\1.o $@ : %g' > $@
-	
-######### Debug ######################
-.PHONY: files
-files: 
-	@echo "PROJECT         = $(PROJECT)"
-	@echo "SUBPROJECTS     = $(SUBPROJECTS)"
-	@echo "SUBPROJ_CELAN   = $(SUBPROJECTSTOCELAN)"
-	@echo "CONF            = $(CONF)"
-	@echo "TARGETDIR       = $(TARGETDIR)"
-	@echo "CXXFLAGS        = $(CXXFLAGS)"
-	@echo "EXECUTABLE      = $(EXECUTABLE)"
-	@echo "LIBRARY         = $(LIBRARY)"
-	@echo "DYNAMIC         = $(DYNAMIC)"
-	@echo "EXECUTABLE_FILE = $(EXECUTABLE_FILE)"
-	@echo "LIBRARY_FILE    = $(LIBRARY_FILE)"
-	@echo "DYNAMIC_FILE    = $(DYNAMIC_FILE)"
-	@echo "FILTER          = $(IGNORE_FILES)"
-	@echo "SOURCES         = $(SOURCES)"
-	@echo "OBJECTS         = $(OBJECTS)"
-	@echo "HEADERS         = $(HEADERS)"
-	@echo "MOCKS           = $(MOCKS)"
-	@echo "UIS             = $(UIS)"
-	@echo "MOCS            = $(MOCS)"
-	@echo "BINS            = $(BINS)"
-	@echo "DEPS            = $(DEPS)"
+
+######### BUILD ORDER ######################
+$(BIN_HEADERS) : 
+$(BIN_SOURCES): $(BIN_HEADERS) 
+$(UIS): $(BIN_SOURCES) 
+$(QRC_SOURCES): $(UIS) 
+$(MOCS): $(QRC_SOURCES)
+$(DEPS): $(MOCS) 
+$(OBJECTS): $(DEPS)  
+$(DYNAMIC_FILE): subprojects $(OBJECTS) 
+$(LIBRARY_FILE): subprojects $(OBJECTS) 
+$(EXECUTABLE_FILE): subprojects $(OBJECTS) 
+
+
 
 ######### Google Mock ################
 .PHONY: mock

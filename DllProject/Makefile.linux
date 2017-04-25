@@ -1,4 +1,4 @@
-PROJECT=LibProject
+PROJECT=DllProject
 SUBPROJECTS=
 INCLUDES=
 CXXFLAGS_BASE=-c -DNDEBUG -Wall $(INCLUDES) -fPIC
@@ -7,7 +7,7 @@ CXXFLAGS_DEBUG  = -O0 -g -DDEBUG
 LDFLAGS_BASE=
 IGNORE_FILES=
 #EXECUTABLE=$(PROJECT)
-LIBRARY=$(addsuffix .a,$(addprefix lib,$(PROJECT)))
-#DYNAMIC=$(addsuffix .so,$(addprefix lib,$(PROJECT)))
+#LIBRARY=$(addsuffix .a,$(addprefix lib,$(PROJECT)))
+DYNAMIC=$(addsuffix .so,$(addprefix lib,$(PROJECT)))
 
 include ../MakefileBase

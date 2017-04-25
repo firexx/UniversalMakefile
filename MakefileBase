@@ -31,10 +31,13 @@
 files: 
 	@echo "PROJECT         = $(PROJECT)"
 	@echo "SUBPROJECTS     = $(SUBPROJECTS)"
+	@echo "SUBPROJECTS_DIR = $(SUBPROJECTS_TARGETDIRS)"
 	@echo "SUBPROJ_CELAN   = $(SUBPROJECTSTOCELAN)"
 	@echo "CONF            = $(CONF)"
 	@echo "TARGETDIR       = $(TARGETDIR)"
 	@echo "CXXFLAGS        = $(CXXFLAGS)"
+	@echo "LIBRARY_PATH    = $(LIBRARY_PATH)"
+	@echo "LDFLAGS         = $(LDFLAGS)"
 	@echo "EXECUTABLE      = $(EXECUTABLE)"
 	@echo "LIBRARY         = $(LIBRARY)"
 	@echo "DYNAMIC         = $(DYNAMIC)"
@@ -53,7 +56,7 @@ files:
 	@echo "MOCS            = $(MOCS)"
 	@echo "BINS            = $(BINS)"
 	@echo "DEPS            = $(DEPS)"
-
+	@echo "SP              = $(SP)"
 
 SOURCE_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.cpp))
 HEADER_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.h *.hpp))
@@ -118,10 +121,11 @@ OBJECTS+=$(addprefix $(TARGETDIR)/,$(subst .c,.o,$(subst .cpp,.o,$(SOURCES))))
 build: $(DYNAMIC_FILE) $(LIBRARY_FILE) $(EXECUTABLE_FILE) 
 
 SUBPROJECTS_TARGETDIRS=$(addsuffix /$(TARGETDIR),$(SUBPROJECTS))
-subprojects : $(SUBPROJECTS_TARGETDIRS)
 $(SUBPROJECTS_TARGETDIRS): $(SUBPROJECTS)
-	@echo " =====> build project $<"
-	@$(MAKE) -C $< -f Makefile.linux build 
+	@echo " =====> build project $(patsubst %$(TARGETDIR),%,$@)"
+	@$(MAKE) -C $(patsubst %$(TARGETDIR),%,$@) -f Makefile.linux build 
+
+SP=$(patsubst %$(TARGETDIR),%,$(SUBPROJECTS_TARGETDIRS))
 
 SUBPROJECTSTOCELAN= $(addsuffix "-toclean",$(SUBPROJECTS))
 
@@ -140,15 +144,15 @@ clean:
 
 $(EXECUTABLE_FILE): $(OBJECTS)
 	@echo " =====> linking an executable $(EXECUTABLE)"
-	$(CXX) -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
+	@$(CXX) -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
 
 $(LIBRARY_FILE): $(OBJECTS)
 	@echo " =====> linking a static library $(LIBRARY)"
-	$(AR) rcs $@ $(OBJECTS)
+	@$(AR) rcs $@ $(OBJECTS)
 
 $(DYNAMIC_FILE): $(OBJECTS)
 	@echo " =====> linking a dynamic library $(DYNAMIC)"
-	$(CXX) -shared -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS) 
+	@$(CXX) -shared -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS) 
 
 $(TARGETDIR)/%.o : %.cpp
 	@echo " =====> compile $< to $@"
@@ -168,11 +172,9 @@ $(QRC_SOURCES): $(UIS)
 $(MOCS): $(QRC_SOURCES)
 $(DEPS): $(MOCS) 
 $(OBJECTS): $(DEPS)  
-$(DYNAMIC_FILE): subprojects $(OBJECTS) 
-$(LIBRARY_FILE): subprojects $(OBJECTS) 
-$(EXECUTABLE_FILE): subprojects $(OBJECTS) 
-
-
+$(DYNAMIC_FILE): $(SUBPROJECTS_TARGETDIRS)  $(OBJECTS) 
+$(LIBRARY_FILE): $(SUBPROJECTS_TARGETDIRS) $(OBJECTS) 
+$(EXECUTABLE_FILE):  $(SUBPROJECTS_TARGETDIRS) $(OBJECTS) 
 
 ######### Google Mock ################
 .PHONY: mock

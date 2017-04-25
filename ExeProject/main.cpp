@@ -17,8 +17,9 @@
  */
 
 #include <LibProject.h>
-
+#include <DllProject.h>
 int main(){
     libprint("libprint");
+    dllprint("dllprint");
     return 0;
 }

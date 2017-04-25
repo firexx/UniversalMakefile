@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  LibProject.cpp
+ *       Filename:  DllProject.h
  *
  *    Description:  
  *
  *        Version:  1.0
- *        Created:  21.04.2017 12:29:48
+ *        Created:  21.04.2017 12:31:17
  *       Revision:  none
  *       Compiler:  gcc
  *
@@ -16,9 +16,10 @@
  * =====================================================================================
  */
 
-#include <iostream>
+#ifndef __DLLPROJECT_H__
+#define __DLLPROJECT_H__
 
-using namespace std;
-void libprint(const char * str){
-    cout << "libprint" << str << endl;
-}
+void dllprint(const char *str);
+
+#endif
+

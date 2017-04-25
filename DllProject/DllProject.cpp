@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  LibProject.cpp
+ *       Filename:  DllProject.cpp
  *
  *    Description:  
  *
@@ -19,6 +19,6 @@
 #include <iostream>
 
 using namespace std;
-void libprint(const char * str){
-    cout << "libprint" << str << endl;
+void dllprint(const char * str){
+    cout <<"dllpriont:"<< str << endl;
 }

@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 
+#include "DllProject.h"
 #include <iostream>
 
 using namespace std;

@@ -122,10 +122,7 @@ build: $(DYNAMIC_FILE) $(LIBRARY_FILE) $(EXECUTABLE_FILE)
 
 SUBPROJECTS_TARGETDIRS=$(addsuffix /$(TARGETDIR),$(SUBPROJECTS))
 $(SUBPROJECTS_TARGETDIRS): $(SUBPROJECTS)
-	@echo " =====> build project $(patsubst %$(TARGETDIR),%,$@)"
-	@$(MAKE) -C $(patsubst %$(TARGETDIR),%,$@) -f Makefile.linux build 
-
-SP=$(patsubst %$(TARGETDIR),%,$(SUBPROJECTS_TARGETDIRS))
+	@$(foreach sub,$(SUBPROJECTS),$(MAKE) -C $(sub) -f Makefile.linux build; )
 
 SUBPROJECTSTOCELAN= $(addsuffix "-toclean",$(SUBPROJECTS))
 

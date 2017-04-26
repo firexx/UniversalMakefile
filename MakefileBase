@@ -1,6 +1,6 @@
 # using from project subdirectory:
-#	make CONF=debug build
-#	make CONF=release build
+#	make CONF=debug 
+#	make CONF=release 
 #	make clean
 #
 # Variables
@@ -25,6 +25,10 @@
 # DYNAMIC=SharedLibraryName.so                   // specify this variable for creating the shared library
 
 ############## DON'T EDIT UNDER ######################
+
+.PHONY: all
+all: build
+
 ######### Debug ######################
 
 .PHONY: files
@@ -33,7 +37,7 @@ files:
 	@echo "SUBPROJECTS     = $(SUBPROJECTS)"
 	@echo "SUBPROJECTS_DIR = $(SUBPROJECTS_TARGETDIRS)"
 	@echo "SUBPROJ_CELAN   = $(SUBPROJECTSTOCELAN)"
-	@echo "CONF            = $(CONF)"
+	@echo "DO_CONF         = $(DO_CONF)"
 	@echo "TARGETDIR       = $(TARGETDIR)"
 	@echo "CXXFLAGS        = $(CXXFLAGS)"
 	@echo "LIBRARY_PATH    = $(LIBRARY_PATH)"
@@ -59,11 +63,16 @@ files:
 	@echo "SP              = $(SP)"
 
 DEFAULT_VERBOSITY = 0
-
 V_AT = $(V_AT_$(V))
 V_AT_ = $(V_AT_$(DEFAULT_VERBOSITY))
 V_AT_0 = @
 V_AT_1 =
+
+DEFAULT_CONF = release
+DO_CONF = $(CONF_$(CONF))
+CONF_ = $(CONF_$(DEFAULT_CONF))
+CONF_release=release
+CONF_debug=debug
 
 SOURCE_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.cpp))
 HEADER_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.h *.hpp))
@@ -116,7 +125,7 @@ LDFLAGS=$(LDFLAGS_BASE)
 DEPDIR=deps
 DEPS:=$(patsubst %.cpp,$(DEPDIR)/%.d,$(SOURCE_FILES))
 
-ifeq ($(CONF),release)
+ifeq ($(DO_CONF),release)
     CXXFLAGS+=$(CXXFLAGS_RELEASE)
     LDFLAGS+= $(LDFLAGS_RELEASE)
 else 
@@ -124,7 +133,7 @@ else
     LDFLAGS+= $(LDFLAGS_DEBUG)
 endif
 
-TARGETDIR=bin/$(CONF)
+TARGETDIR=bin/$(DO_CONF)
 OBJECTS+=$(addprefix $(TARGETDIR)/,$(subst .c,.o,$(subst .cpp,.o,$(SOURCES))))
 
 .PHONY: build

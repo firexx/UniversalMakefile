@@ -64,6 +64,9 @@ HEADER_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.h *.hpp))
 SOURCES=$(sort $(SOURCE_FILES))
 #HEADERS=$(sort $(HEADER_FILES))
 
+INCLUDES+= $(addprefix -I,$(SUBPROJECTS))
+LIBRARY_PATH+= $(addprefix -L,$(SUBPROJECTS))
+
 MOCKS=$(patsubst %.h,%_mock.h,$(patsubst %.hpp,%_mock.hpp,$(filter-out stdafx.h ui_%.h,$(HEADERS))))
 
 UIS=$(filter-out $(IGNORE_FILES),$(wildcard *.ui))

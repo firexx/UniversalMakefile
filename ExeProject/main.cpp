@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 
+#include <ExeProject.h>
 #include <LibProject.h>
 #include <DllProject.h>
 int main(){

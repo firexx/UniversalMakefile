@@ -58,6 +58,13 @@ files:
 	@echo "DEPS            = $(DEPS)"
 	@echo "SP              = $(SP)"
 
+DEFAULT_VERBOSITY = 0
+
+V_AT = $(V_AT_$(V))
+V_AT_ = $(V_AT_$(DEFAULT_VERBOSITY))
+V_AT_0 = @
+V_AT_1 =
+
 SOURCE_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.cpp))
 HEADER_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.h *.hpp))
 
@@ -122,7 +129,7 @@ build: $(DYNAMIC_FILE) $(LIBRARY_FILE) $(EXECUTABLE_FILE)
 
 SUBPROJECTS_TARGETDIRS=$(addsuffix /$(TARGETDIR),$(SUBPROJECTS))
 $(SUBPROJECTS_TARGETDIRS): $(SUBPROJECTS)
-	@$(foreach sub,$(SUBPROJECTS), echo " =====> build subproject $(sub)"; $(MAKE) -C $(sub) -f Makefile.linux build; )
+	$(V_AT)$(foreach sub,$(SUBPROJECTS), echo " =====> build subproject $(sub)"; $(MAKE) -C $(sub) -f Makefile.linux build; )
 
 SUBPROJECTSTOCELAN= $(addsuffix "-toclean",$(SUBPROJECTS))
 
@@ -130,36 +137,36 @@ SUBPROJECTSTOCELAN= $(addsuffix "-toclean",$(SUBPROJECTS))
 clean-all:  $(SUBPROJECTSTOCELAN) clean
 
 $(SUBPROJECTSTOCELAN) :
-	@$(MAKE) -C $(subst "-toclean", , $@) -f Makefile.linux clean
+	$(V_AT)$(MAKE) -C $(subst "-toclean", , $@) -f Makefile.linux clean
 
  
 .PHONY: clean
 clean:
 	@echo " =====> clean generated files" 
-	@$(RM) -r $(TARGETDIR) $(DEPDIR) $(EXECUTABLE_FILE) $(LIBRARY_FILE) $(DYNAMIC_FILE) $(OBJECTS) $(MOCKS) $(MOCS) $(BIN_HEADERS) $(BIN_SOURCES) \
+	$(V_AT)$(RM) -r $(TARGETDIR) $(DEPDIR) $(EXECUTABLE_FILE) $(LIBRARY_FILE) $(DYNAMIC_FILE) $(OBJECTS) $(MOCKS) $(MOCS) $(BIN_HEADERS) $(BIN_SOURCES) \
 		$(QRC_SOURCES) *.bak
 
 $(EXECUTABLE_FILE): $(OBJECTS)
 	@echo " =====> linking an executable $(EXECUTABLE)"
-	@$(CXX) -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
+	$(V_AT)$(CXX) -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
 
 $(LIBRARY_FILE): $(OBJECTS)
 	@echo " =====> linking a static library $(LIBRARY)"
-	@$(AR) rcs $@ $(OBJECTS)
+	$(V_AT)$(AR) rcs $@ $(OBJECTS)
 
 $(DYNAMIC_FILE): $(OBJECTS)
 	@echo " =====> linking a dynamic library $(DYNAMIC)"
-	@$(CXX) -shared -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS) 
+	$(V_AT)$(CXX) -shared -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
 
 $(TARGETDIR)/%.o : %.cpp
 	@echo " =====> compile $< to $@"
-	@mkdir -p $(TARGETDIR)
-	@$(CXX) $(CXXFLAGS) $< -o $@
+	$(V_AT)mkdir -p $(TARGETDIR)
+	$(V_AT)$(CXX) $(CXXFLAGS) $< -o $@
 
 $(DEPDIR)/%.d : %.cpp
 	@echo " =====> cleate dependency $< to $@"
-	@mkdir -p $(DEPDIR)
-	@$(CXX) $(CXXFLAGS) -M $< | sed -e 's%\($*\)\.o[ :]*%$(TARGETDIR)/\1.o $@ : %g' > $@
+	$(V_AT)mkdir -p $(DEPDIR)
+	$(V_AT)$(CXX) $(CXXFLAGS) -M $< | sed -e 's%\($*\)\.o[ :]*%$(TARGETDIR)/\1.o $@ : %g' > $@
 
 ######### BUILD ORDER ######################
 $(BIN_HEADERS) : 
@@ -206,33 +213,33 @@ endef
 
 %.h: %.hex
 	@echo " =====> convert $< to $@"
-	@$(BIN_CONVERT_H)
+	$(V_AT)$(BIN_CONVERT_H)
 
 %.h: %.xsvf
 	@echo " =====> convert $< to $@"
-	@$(BIN_CONVERT_H)
+	$(V_AT)$(BIN_CONVERT_H)
 
 %.cpp : %.hex
 	@echo " =====> convert $< to $@"
-	@$(BIN_CONVERT_C)
+	$(V_AT)$(BIN_CONVERT_C)
 
 %.cpp : %.xsvf
 	@echo " =====> convert $< to $@"
-	@$(BIN_CONVERT_C)
+	$(V_AT)$(BIN_CONVERT_C)
 
 ######### QT #########################
 
 ui_%.h: %.ui
 	@echo " =====> convert $< to $@"
-	@uic $< -o $@
+	$(V_AT)uic $< -o $@
 
 moc_%.cpp: %.h
 	@echo " =====> convert $< to $@"
-	@moc $< -o $@ 
+	$(V_AT)moc $< -o $@
 
 qrc_%.cpp: %.qrc
 	@echo " =====> convert $< to $@"
-	@rcc -name $(basename $< ) $< -o $@
+	$(V_AT)rcc -name $(basename $< ) $< -o $@
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),clean-all)

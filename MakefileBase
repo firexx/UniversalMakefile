@@ -143,8 +143,18 @@ OBJECTS+=$(addprefix $(TARGETDIR)/,$(subst .c,.o,$(subst .cpp,.o,$(SOURCES))))
 build: $(DYNAMIC_FILE) $(LIBRARY_FILE) $(EXECUTABLE_FILE) 
 
 SUBPROJECTS_TARGETDIRS=$(addsuffix /$(TARGETDIR),$(SUBPROJECTS))
+
+ifeq (0,1)
+.PHONY: subprojects $(SUBPROJECTS_TARGETDIRS)
+subprojects: $(SUBPROJECTS_TARGETDIRS)
+$(SUBPROJECTS_TARGETDIRS):
+	@echo " =====> build subproject $(patsubst %/$(TARGETDIR),%,$@)"
+	@echo " =====> pwd : $(shell pwd)"
+	$(V_AT)$(MAKE) -C $(patsubst %/$(TARGETDIR),%,$@) -f Makefile.linux
+else
 $(SUBPROJECTS_TARGETDIRS): $(SUBPROJECTS)
 	$(V_AT)$(foreach sub,$(SUBPROJECTS), echo " =====> build subproject $(sub)"; $(MAKE) -C $(sub) -f Makefile.linux build; )
+endif
 
 SUBPROJECTSTOCELAN= $(addsuffix "-toclean",$(SUBPROJECTS))
 

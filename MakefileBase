@@ -163,7 +163,6 @@ clean:
 
 $(EXECUTABLE_FILE): $(OBJECTS)
 	@echo " =====> linking an executable $(EXECUTABLE)"
-	$(V_AT)$(CXX) -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(LDFLAGS)
 	$(V_AT)$(CXX) -o $@ $(OBJECTS) $(addsuffix /$(TARGETDIR),$(LIBRARY_PATH)) $(EXT_LIBRARY_PATH) $(LDFLAGS)
 
 $(LIBRARY_FILE): $(OBJECTS)

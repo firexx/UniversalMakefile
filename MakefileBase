@@ -80,7 +80,7 @@ SOURCE_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.cpp))
 HEADER_FILES=$(filter-out $(IGNORE_FILES),$(wildcard *.h *.hpp))
 
 SOURCES=$(sort $(SOURCE_FILES))
-#HEADERS=$(sort $(HEADER_FILES))
+HEADERS=$(sort $(HEADER_FILES))
 
 INCLUDES+= $(addprefix -I,$(SUBPROJECTS))
 LIBRARY_PATH+= $(addprefix -L,$(SUBPROJECTS))

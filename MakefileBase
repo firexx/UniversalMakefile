@@ -195,12 +195,12 @@ $(LIBRARY_FILE): $(SUBPROJECTS_TARGETDIRS) $(OBJECTS)
 $(EXECUTABLE_FILE):  $(SUBPROJECTS_TARGETDIRS) $(OBJECTS) 
 
 ######### Google Mock ################
-.PHONY: mock
-mock: $(HEADERS) $(MOCKS)
-
-%_mock.h %_mock.hpp: %.h
-	gmock_gen $< > $@ 
-
+#.PHONY: mock
+#mock: $(HEADERS) $(MOCKS)
+#
+#%_mock.h %_mock.hpp: %.h
+#	gmock_gen $< > $@ 
+#
 ######### binary convertion ################
 
 define BIN_CONVERT_H= 

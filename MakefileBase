@@ -189,7 +189,7 @@ $(TARGETDIR)/%.o : %.cpp
 	$(V_AT)$(CXX) $(CXXFLAGS) $< -o $@
 
 $(DEPDIR)/%.d : %.cpp
-	@echo " =====> cleate dependency $< to $@"
+	@echo " =====> clear dependency $< to $@"
 	$(V_AT)mkdir -p $(DEPDIR)
 	$(V_AT)$(CXX) $(CXXFLAGS) -M $< | sed -e 's%\($*\)\.o[ :]*%$(TARGETDIR)/\1.o $@ : %g' > $@
 

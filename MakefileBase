@@ -51,6 +51,8 @@ files:
 	@printf "\e[0;32mIGNORE_FILES    \e[0m= $(IGNORE_FILES)\n"
 	@printf "\e[0;32mSOURCE_FILES    \e[0m= $(SOURCE_FILES)\n"
 	@printf "\e[0;32mHEADER_FILES    \e[0m= $(HEADER_FILES)\n"
+	@printf "\e[0;32mBIN_SOURCES     \e[0m= $(BIN_SOURCES)\n"
+	@printf "\e[0;32mBIN_HEADERS     \e[0m= $(BIN_HEADERS)\n"
 	@printf "\e[0;32mSOURCES         \e[0m= $(SOURCES)\n"
 	@printf "\e[0;32mOBJECTS         \e[0m= $(OBJECTS)\n"
 	@printf "\e[0;32mHEADERS         \e[0m= $(HEADERS)\n"

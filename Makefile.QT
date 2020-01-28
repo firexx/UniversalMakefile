@@ -1,0 +1,32 @@
+######### QT #########################
+#  ========== QT section begin ==========
+UIS=$(filter-out $(IGNORE_FILES),$(wildcard *.ui))
+UI_HEADERS=$(patsubst %.ui,ui_%.h,$(UIS))
+HEADER_FILES+=$(UI_HEADERS)
+
+ifdef HEADERS
+MOC_HEADERS=$(shell grep "Q_OBJECT" -l $(HEADERS) 2>/dev/null)
+endif
+MOCS=$(patsubst %.h,moc_%.cpp,$(MOC_HEADERS))
+SOURCE_FILES+=$(MOCS)
+
+
+QRCS=$(filter-out $(IGNORE_FILES),$(wildcard *.qrc))
+QRC_SOURCES=$(patsubst %.qrc,qrc_%.cpp,$(QRCS))
+SOURCE_FILES+=$(QRC_SOURCES)
+
+#  ============ QT section end ==========
+
+$(DEPS):  $(QRC_SOURCES) $(UI_HEADERS) 
+
+ui_%.h: %.ui
+	@echo " =====> convert $< to $@"
+	$(V_AT)uic $< -o $@
+
+moc_%.cpp: %.h
+	@echo " =====> convert $< to $@"
+	$(V_AT)moc $< -o $@
+
+qrc_%.cpp: %.qrc
+	@echo " =====> convert $< to $@"
+	$(V_AT)rcc -name $(basename $< ) $< -o $@

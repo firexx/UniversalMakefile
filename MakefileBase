@@ -89,30 +89,7 @@ LIBRARY_PATH+= $(addprefix -L,$(SUBPROJECTS))
 
 #MOCKS=$(patsubst %.h,%_mock.h,$(patsubst %.hpp,%_mock.hpp,$(filter-out stdafx.h ui_%.h,$(HEADERS))))
 
-#  ========== QT section begin ==========
-UIS=$(filter-out $(IGNORE_FILES),$(wildcard *.ui))
-UI_HEADERS=$(patsubst %.ui,ui_%.h,$(UIS))
-HEADER_FILES+=$(UI_HEADERS)
 
-ifdef HEADERS
-MOC_HEADERS=$(shell grep "Q_OBJECT" -l $(HEADERS) 2>/dev/null)
-endif
-MOCS=$(patsubst %.h,moc_%.cpp,$(MOC_HEADERS))
-SOURCE_FILES+=$(MOCS)
-
-
-QRCS=$(filter-out $(IGNORE_FILES),$(wildcard *.qrc))
-QRC_SOURCES=$(patsubst %.qrc,qrc_%.cpp,$(QRCS))
-SOURCE_FILES+=$(QRC_SOURCES)
-#  ============ QT section end ==========
-
-
-BINS=$(filter-out $(IGNORE_FILES),$(wildcard *.hex *.xsvf))
-BIN_HEADERS=$(patsubst %.xsvf,%.h,$(patsubst %.hex,%.h,$(BINS)))
-BIN_SOURCES=$(patsubst %.xsvf,%.cpp,$(patsubst %.hex,%.cpp,$(BINS)))
-
-HEADER_FILES+=$(BIN_HEADERS)
-SOURCE_FILES+=$(BIN_SOURCES)
 
 
 ifdef EXECUTABLE
@@ -199,77 +176,11 @@ $(DEPDIR)/%.d : %.cpp
 	$(V_AT)$(CXX) $(CXXFLAGS) -M $< | sed -e 's%\($*\)\.o[ :]*%$(TARGETDIR)/\1.o $@ : %g' > $@
 
 ######### BUILD ORDER ######################
-$(BIN_HEADERS) : 
-$(BIN_SOURCES): $(BIN_HEADERS) 
-$(UI_HEADERS): $(BIN_SOURCES) 
-$(QRC_SOURCES): $(UI_HEADERS) 
-$(MOCS): $(QRC_SOURCES)
-$(DEPS): $(MOCS) 
+$(DEPS): $(BIN_SOURCES) $(BIN_HEADERS)
 $(OBJECTS): $(DEPS)  
 $(DYNAMIC_FILE): $(SUBPROJECTS_TARGETDIRS)  $(OBJECTS) 
 $(LIBRARY_FILE): $(SUBPROJECTS_TARGETDIRS) $(OBJECTS) 
 $(EXECUTABLE_FILE):  $(SUBPROJECTS_TARGETDIRS) $(OBJECTS) 
-
-######### Google Mock ################
-#.PHONY: mock
-#mock: $(HEADERS) $(MOCKS)
-#
-#%_mock.h %_mock.hpp: %.h
-#	gmock_gen $< > $@ 
-#
-######### binary convertion ################
-
-define BIN_CONVERT_H= 
-	@echo "#ifndef __$(shell basename $@ .h | tr a-z A-Z )_H__" > $@      
-	@echo "#define __$(shell basename $@ .h | tr a-z A-Z )_H__" >> $@     
-	@echo >> $@                                                           
-	@echo "extern size_t $(shell basename $@ .h)_size;">> $@ 
-	@echo "extern unsigned char $(shell basename $@ .h)[];" >> $@             
-	@echo >> $@                                                           
-	@echo "#endif" >> $@                                                  
-	@echo  >> $@                                   
-endef
-
-define BIN_CONVERT_C=
-	@echo "#include \"StdAfx.h\""> $@      
-	@echo "#include \"$(shell basename $@ .cpp).h\"" >> $@
-	@echo >> $@                                                           
-	@echo "size_t $(shell basename $@ .cpp)_size=$(shell stat -L -c '%s' $< );">> $@ 
-	@echo "unsigned char $(shell basename $@ .cpp)[] = {" >> $@             
-	@xxd -i < $< >> $@                                                    
-	@echo "};" >> $@                                                      
-	@echo >> $@                                                           
-endef
-
-%.h: %.hex
-	@echo " =====> convert $< to $@"
-	$(V_AT)$(BIN_CONVERT_H)
-
-%.h: %.xsvf
-	@echo " =====> convert $< to $@"
-	$(V_AT)$(BIN_CONVERT_H)
-
-%.cpp : %.hex
-	@echo " =====> convert $< to $@"
-	$(V_AT)$(BIN_CONVERT_C)
-
-%.cpp : %.xsvf
-	@echo " =====> convert $< to $@"
-	$(V_AT)$(BIN_CONVERT_C)
-
-######### QT #########################
-
-ui_%.h: %.ui
-	@echo " =====> convert $< to $@"
-	$(V_AT)uic $< -o $@
-
-moc_%.cpp: %.h
-	@echo " =====> convert $< to $@"
-	$(V_AT)moc $< -o $@
-
-qrc_%.cpp: %.qrc
-	@echo " =====> convert $< to $@"
-	$(V_AT)rcc -name $(basename $< ) $< -o $@
 
 ifneq ($(MAKECMDGOALS),files)
 ifneq ($(MAKECMDGOALS),clean)

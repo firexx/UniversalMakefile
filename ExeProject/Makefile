@@ -1,0 +1,18 @@
+PROJECT=ExeProject
+SUBPROJECTS=../LibProject ../DllProject
+INCLUDES=$(addprefix -I,$(SUBPROJECTS))
+CXXFLAGS_BASE=-c -Wall -DNDEBUG -DWITH_PROFILER -pthread $(INCLUDES) -fPIC
+CXXFLAGS_RELEASE= -O3 -DRELEASE
+CXXFLAGS_DEBUG  = -O0 -g -DDEBUG
+LIBRARY_PATH= $(addprefix -L,$(SUBPROJECTS))
+LDFLAGS_BASE= $(patsubst ../%,-l%,$(SUBPROJECTS))
+LDFLAGS_DEBUG=
+LDFLAGS_RELEASE=
+IGNORE_FILES=
+EXECUTABLE=$(TARGETDIR)/$(PROJECT)
+#STATICLIB=$(addsuffix .a,$(addprefix $(TARGETDIR)/lib,$(PROJECT)))
+#DYNAMICLIB=$(addsuffix .so,$(addprefix $(TARGETDIR)/lib,$(PROJECT)))
+
+VERBOSITY=1
+include ../Makefile
+
